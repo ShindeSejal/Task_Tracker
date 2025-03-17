@@ -21,4 +21,11 @@ Use the native file system module of your programming language to interact with 
 Do not use any external libraries or frameworks to build this project.
 Ensure to handle errors and edge cases gracefully.
 
+
+***OUTPUT OF THE PROGRAM****
+
 ![Screenshot 2025-03-17 163040](https://github.com/user-attachments/assets/b5c4a604-4800-47c2-9a7d-cfef42375df8)
+
+![Screenshot 2025-03-17 163116](https://github.com/user-attachments/assets/824b5dc8-3f25-42a3-9631-c716d45ec6fa)
+
+
