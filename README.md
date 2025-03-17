@@ -2,7 +2,7 @@
 Task Tracker Build a CLI app to track your tasks and manage your to-do list
 https://roadmap.sh/projects/task-tracker
 
-Requirements
+****Requirements:****
 The application should run from the command line, accept user actions and inputs as arguments, and store the tasks in a JSON file. The user should be able to:
 
 Add, Update, and Delete tasks
