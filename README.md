@@ -20,3 +20,5 @@ The JSON file should be created if it does not exist.
 Use the native file system module of your programming language to interact with the JSON file.
 Do not use any external libraries or frameworks to build this project.
 Ensure to handle errors and edge cases gracefully.
+
+![Screenshot 2025-03-17 163040](https://github.com/user-attachments/assets/b5c4a604-4800-47c2-9a7d-cfef42375df8)
