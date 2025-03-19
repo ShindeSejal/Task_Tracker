@@ -1,6 +1,7 @@
 import json
-import os
 import sys
+import os
+from datetime import datetime
 
 TASK_FILE = "tasks.json"
 
@@ -11,7 +12,9 @@ def load_tasks():
     try:
         with open(TASK_FILE, "r") as f:
             return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
         return []
 
 def save_tasks(tasks):
@@ -22,124 +25,163 @@ def save_tasks(tasks):
 def add_task(description):
     """Adds a new task."""
     tasks = load_tasks()
-    new_task = {"description": description, "status": "todo"}
+    new_id = 1
+    if tasks:
+        new_id = max(task["id"] for task in tasks) + 1
+    now = datetime.now().isoformat()
+    new_task = {
+        "id": new_id,
+        "description": description,
+        "status": "todo",
+        "createdAt": now,
+        "updatedAt": now,
+    }
     tasks.append(new_task)
     save_tasks(tasks)
-    print(f"Added task: {description}")
+    print(f"Task added successfully (ID: {new_id})")
 
-def update_task(index, description):
+def update_task(task_id, description):
     """Updates an existing task."""
     tasks = load_tasks()
-    if 0 <= index < len(tasks):
-        tasks[index]["description"] = description
-        save_tasks(tasks)
-        print(f"Updated task {index}: {description}")
-    else:
-        print("Invalid task index.")
+    for task in tasks:
+        if task["id"] == task_id:
+            task["description"] = description
+            task["updatedAt"] = datetime.now().isoformat()
+            save_tasks(tasks)
+            print(f"Task {task_id} updated successfully")
+            return
+    print(f"Task {task_id} not found")
 
-def delete_task(index):
-    """Deletes a task."""
+def delete_task(task_id):
+    """Deletes an existing task."""
     tasks = load_tasks()
-    if 0 <= index < len(tasks):
-        deleted_task = tasks.pop(index)
-        save_tasks(tasks)
-        print(f"Deleted task {index}: {deleted_task['description']}")
-    else:
-        print("Invalid task index.")
+    tasks = [task for task in tasks if task["id"] != task_id]
+    save_tasks(tasks)
+    print(f"Task {task_id} deleted successfully")
 
-def mark_task(index, status):
+def mark_task_status(task_id, status):
     """Marks a task as in progress or done."""
     tasks = load_tasks()
-    if 0 <= index < len(tasks):
-        if status in ["done", "in_progress", "todo"]:
-            tasks[index]["status"] = status
-            save_tasks(tasks)
-            print(f"Marked task {index} as {status}")
-        else:
-            print("Invalid status. Use 'done', 'in_progress', or 'todo'.")
-    else:
-        print("Invalid task index.")
+    for task in tasks:
+        if task["id"] == task_id:
+            if status in ["in-progress", "done", "todo"]:
+                task["status"] = status
+                task["updatedAt"] = datetime.now().isoformat()
+                save_tasks(tasks)
+                print(f"Task {task_id} marked as {status}")
+                return
+            else:
+                print(f"Invalid status: {status}. Must be 'todo', 'in-progress', or 'done'.")
+                return
+    print(f"Task {task_id} not found")
 
-def list_tasks(filter_status=None):
-    """Lists tasks, optionally filtered by status."""
+def list_tasks(status=None):
+    """Lists tasks, optionally filtered by status, in a table format with borders."""
     tasks = load_tasks()
-    if not tasks:
+    if status:
+        valid_statuses = ["done", "todo", "in-progress"]
+        if status not in valid_statuses:
+            print(f"Invalid status: {status}. Must be 'todo', 'in-progress', or 'done'.")
+            return
+        filtered_tasks = [task for task in tasks if task["status"] == status]
+    else:
+        filtered_tasks = tasks
+    if not filtered_tasks:
         print("No tasks found.")
         return
 
-    for index, task in enumerate(tasks):
-        if filter_status is None or task["status"] == filter_status:
-            print(f"{index}. [{task['status']}] {task['description']}")
+    header = ["ID", "Description", "Status", "Created", "Updated"]
+    col_widths = [5, 30, 15, 25, 25]
+
+    def print_row(row):
+        print("|", end="")
+        for i, col in enumerate(row):
+            print(f" {col:<{col_widths[i]}} |", end="")
+        print()
+
+    def print_separator():
+        print("+", end="")
+        for width in col_widths:
+            print("-" * (width + 2), end="+")
+        print()
+
+    print_separator()
+    print_row(header)
+    print_separator()
+    for task in filtered_tasks:
+        row = [
+            task['id'],
+            task['description'],
+            task['status'],
+            task['createdAt'],
+            task['updatedAt']
+        ]
+        print_row(row)
+        print_separator()
 
 def main():
-    """Main function to handle command line arguments."""
+    """Main function to handle command-line arguments."""
     if len(sys.argv) < 2:
-        print("Usage:")
-        print("  add <description>")
-        print("  update <index> <description>")
-        print("  delete <index>")
-        print("  mark <index> <done|in_progress|todo>")
-        print("  list")
-        print("  list done")
-        print("  list in_progress")
-        print("  list todo")
+        print("")
         return
 
     command = sys.argv[1]
 
     if command == "add":
         if len(sys.argv) < 3:
-            print("Usage: add <description>")
+            print("Usage: task.py add <description>")
             return
-        description = " ".join(sys.argv[2:])
+        description = sys.argv[2]
         add_task(description)
-
     elif command == "update":
         if len(sys.argv) < 4:
-            print("Usage: update <index> <description>")
+            print("Usage: task.py update <id> <description>")
             return
         try:
-            index = int(sys.argv[2])
-            description = " ".join(sys.argv[3:])
-            update_task(index, description)
+            task_id = int(sys.argv[2])
         except ValueError:
-            print("Invalid index. Must be an integer.")
-
+            print("Task ID must be an integer.")
+            return
+        description = sys.argv[3]
+        update_task(task_id, description)
     elif command == "delete":
         if len(sys.argv) < 3:
-            print("Usage: delete <index>")
+            print("Usage: task.py delete <id>")
             return
         try:
-            index = int(sys.argv[2])
-            delete_task(index)
+            task_id = int(sys.argv[2])
         except ValueError:
-            print("Invalid index. Must be an integer.")
-
-    elif command == "mark":
-        if len(sys.argv) < 4:
-            print("Usage: mark <index> <done|in_progress|todo>")
+            print("Task ID must be an integer.")
+            return
+        delete_task(task_id)
+    elif command == "mark-in-progress":
+        if len(sys.argv) < 3:
+            print("Usage: task.py mark-in-progress <id>")
             return
         try:
-            index = int(sys.argv[2])
-            status = sys.argv[3]
-            mark_task(index, status)
+            task_id = int(sys.argv[2])
         except ValueError:
-            print("Invalid index. Must be an integer.")
-
+            print("Task ID must be an integer.")
+            return
+        mark_task_status(task_id, "in-progress")
+    elif command == "mark-done":
+        if len(sys.argv) < 3:
+            print("Usage: task.py mark-done <id>")
+            return
+        try:
+            task_id = int(sys.argv[2])
+        except ValueError:
+            print("Task ID must be an integer.")
+            return
+        mark_task_status(task_id, "done")
     elif command == "list":
-        if len(sys.argv) == 2:
-            list_tasks()
-        elif len(sys.argv) == 3:
+        if len(sys.argv) > 2:
             status = sys.argv[2]
-            if status in ["done", "in_progress", "todo"]:
-                list_tasks(status)
-            else:
-                print("Invalid status. Use 'done', 'in_progress', or 'todo'.")
+            list_tasks(status)
         else:
-            print("Usage: list [done|in_progress|todo]")
-
+            list_tasks()
     else:
-        print("Invalid command.")
+        print("Invalid command")
 
 if __name__ == "__main__":
     main()
